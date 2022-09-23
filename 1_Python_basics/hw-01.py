@@ -1,6 +1,4 @@
 """
-Create a python script:
-
 create list of 100 random numbers from 0 to 1000
 sort list from min to max (without using sort())
 calculate average for even and odd numbers
@@ -10,11 +8,13 @@ print both average result in console
 # Import random module for numbers generation
 import random
 
-random_list = []  # Initialize empty list
+random_list = []  # Initialize empty list for random numbers
 for i in range(100):  # Initialize iteration over a sequence of numbers from 0 to 100
     random_list.append(random.randint(0, 1000))  # Add random numbers from 0 to 1000 to empty list
 
 random_list = [random.randint(0, 1000) for i in range(100)]  # Optional list comprehension solution
+
+print(random_list)  # Check the results of numbers generation
 
 # Iterate over list indexes
 for initial_index in range(len(random_list)):
@@ -24,6 +24,8 @@ for initial_index in range(len(random_list)):
         if random_list[initial_index] > random_list[secondary_index]:
             random_list[initial_index], random_list[secondary_index] = random_list[secondary_index], random_list[
                 initial_index]
+
+print(random_list)  # Check the results of numbers sorting
 
 # Create empty lists for odd and even numbers
 even_list = []
