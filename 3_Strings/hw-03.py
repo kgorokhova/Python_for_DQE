@@ -29,7 +29,7 @@ new_sentence = [x[:-1] for x in last_words]
 split_sentences.insert(4, f"I've got 8 last words from each sentence: {', '.join(new_sentence)}. \n\n \n\n  ")
 
 # Normalize text from letters point of view
-normalized_text = [i[0:].capitalize() for i in split_sentences]
+normalized_text = [i.capitalize() for i in split_sentences]
 
 # Join all sentences in one text
 joined_text = ''.join(normalized_text)
@@ -40,12 +40,12 @@ print(final_text)
 
 # Count whitespaces in initial and final text, print the results
 initial_spaces = 0
-for a in initial_text:
-    if a.isspace():
+for items in initial_text:
+    if items.isspace():
         initial_spaces = initial_spaces+1
 
 final_spaces = 0
-for b in final_text:
-    if b.isspace():
+for items in final_text:
+    if items.isspace():
         final_spaces = final_spaces+1
 print(f' \n\n\n  Initial text spaces - {initial_spaces}, final text spaces - {final_spaces}')

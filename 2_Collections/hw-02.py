@@ -22,7 +22,7 @@ for i in range(random.randint(2, 10)):  # Initialize iteration in random range f
     letters_list = string.ascii_lowercase  # Generate list of letters
     count_of_values = random.randint(2, 5)  # Generate number of values
     key = random.choices(letters_list, k=count_of_values)  # Pick random letters from the list of letters
-    random_dict = {i: random.randint(0, 100) for i in key}  # Create random dicts
+    random_dict = {i: random.randint(1, 100) for i in key}  # Create random dicts
     result_list.append(random_dict)  # Add all random dicts into the list
 
 print(result_list)  # Check the result of creating random dicts
