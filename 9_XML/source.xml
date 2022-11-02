@@ -1,0 +1,26 @@
+<news_items>
+    <item type="news">
+        <news_text>This is news</news_text>
+        <city>London</city>
+    </item>
+    <item type="news">
+        <news_text>This is another news</news_text>
+        <city>Moscow</city>
+    </item>
+    <item type="ad">
+        <ad_text>This is ad</ad_text>
+        <due_date>2023-02-05</due_date>
+    </item>
+    <item type="ad">
+        <ad_text>This is another ad</ad_text>
+        <due_date>2023-03-11</due_date>
+    </item>
+    <item type="recipe">
+        <recipe_text>This is recipe</recipe_text>
+        <time>30</time>
+    </item>
+    <item type="recipe">
+        <recipe_text>This is another recipe</recipe_text>
+        <time>150</time>
+    </item>
+</news_items>
