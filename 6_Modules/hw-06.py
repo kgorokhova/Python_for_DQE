@@ -6,7 +6,7 @@ Expand previous Homework 5 with additional class, which allow to provide records
 3.Remove file if it was successfully processed
 4.Apply case normalization functionality form Homework 3/4
 """
-
+import re
 from datetime import datetime, date  # Import module datetime for dates and time use
 from random import randint  # Import random module for numbers generation
 from hw_04 import splitting_sentences, normalize_text  # import text splitting and normalization functions
@@ -17,6 +17,7 @@ FILE_NAME = 'newsfeed.txt'  # Declare text file global variable as constant for 
 
 class News:
     """Generates news for news feed"""
+
     def __init__(self, news_text: str, news_city: str):
         """Accepts parameters for news - text and city"""
         self.news_text = news_text
@@ -41,6 +42,7 @@ class News:
 
 class Advertising:
     """Generates private ad for news feed"""
+
     def __init__(self, ad_text: str, ad_date: date):
         """Accepts parameters for private ad - text and expiration date"""
         self.ad_text = ad_text
@@ -76,6 +78,7 @@ class Advertising:
 
 class Recipes:
     """Generates cooking recipes for news feed"""
+
     def __init__(self, recipe_text: str, cooking_time: int):
         """Accepts parameters for recipes - text and cooking time"""
         self.recipe_text = recipe_text
@@ -111,6 +114,8 @@ class Recipes:
 
 class TextFile:
     """Generates news items from text file"""
+    default_file_name = 'source.txt'
+
     def __init__(self, file_path: str):
         """Accepts parameter for finding text file - file path"""
         self.file_path = file_path
@@ -121,7 +126,7 @@ class TextFile:
         while True:
             file_path = input('Enter file path (keep empty input for default path): ')
             if file_path == '':  # If user left empty input - used default path
-                file_path = f'{os.getcwd()}\\source_text.txt'
+                file_path = f'{os.getcwd()}\\{cls.default_file_name}'
             # Validate file existence
             file_exists = os.path.isfile(file_path)
             if file_exists:
@@ -135,13 +140,29 @@ class TextFile:
         """Reads file, normalize news items and saves it to newsfeed file"""
         with open(self.file_path, 'r') as file:
             text_from_file = splitting_sentences(file.read())
-            fixed_text = normalize_text(text_from_file)
+            fixed_text = normalize_text(text_from_file)  # apply text normalization logic from hw 04
+        # Find all News related entries and add it to newsfeed file
+        news_items = re.findall(r'News:(.*?)City:(.*?)\.', fixed_text, flags=re.M | re.S)
+        for item in news_items:
+            news_text = item[0]
+            news_city = item[1].strip()
+            news = News(news_text, news_city)  # applies logic from News class
+            news.save_news_to_file()
+        # Find all Ad related entries and add it to newsfeed file
+        ad_items = re.findall(r'Ad:(.*?)Date:(.*?)\.', fixed_text, flags=re.M | re.S)
+        for item in ad_items:
+            ad_text = item[0]
+            ad_date = datetime.strptime(item[1].strip(), "%Y-%m-%d")
+            ad = Advertising(ad_text, ad_date.date())  # applies logic from Advertising class
+            ad.save_ad_to_file()
+        # Find all Recipes related entries and add it to newsfeed file
+        recipe_items = re.findall(r'Recipe:(.*?)Time:(.*?)\.', fixed_text, flags=re.M | re.S)
+        for item in recipe_items:
+            recipe_text = item[0]
+            recipe_time = item[1].strip()
+            recipe = Recipes(recipe_text, int(recipe_time))  # applies logic from Recipes class
+            recipe.save_recipe_to_file()
 
-        for news in splitting_sentences(fixed_text):  # append all news items to text file
-            with open(FILE_NAME, 'a') as newsfeed:
-                newsfeed.write(f'News form file ---------------\n'
-                               f'{news}\n'
-                               f'------------------------------\n\n\n')
         os.remove(self.file_path)  # Delete source file after all items was added
 
 
@@ -152,7 +173,7 @@ def main():
         a - Add News
         b - Add Private ad
         c - Add Recipes
-        d - Add text from file
+        d - Add items from text file
         e - Exit news feed generator\n""")
 
         # Initiate news generation depending on chosen action

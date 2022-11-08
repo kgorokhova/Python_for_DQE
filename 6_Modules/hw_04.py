@@ -25,7 +25,7 @@ text_sample = """homEwork:
 
 def splitting_sentences(input_text: str) -> list:
     """Split string into separate sentences, using regex"""
-    split_sentences = re.findall(r'([A-Za-z][^.!?:]*[.!?:]\s*)', input_text)
+    split_sentences = re.findall(r'([A-Za-z1-9][^.!?:]*[.!?:]\s*)', input_text)
     return split_sentences
 
 

@@ -1,9 +1,9 @@
 """
-Expand previous Homework 5/6/7/8 with additional class, which allow to provide records by XML file:
+Expand previous Homework 5/6/7/8/9 with additional class, which allow to save records into database:
 
-1.Define your input format (one or many records)
-2.Default folder or user provided file path
-3.Remove file if it was successfully processed
+1.Different types of records require different data tables
+2.New record creates new row in data table
+3.Implement “no duplicate” check.
 """
 
 import xml.etree.ElementTree
@@ -15,6 +15,7 @@ import re  # Import module re for regular expressions use
 import csv  # Import csv module for csv parsing
 import json  # Import json module for reading and writing JSONs
 import xml.etree.ElementTree as ET  # Import xml module for XML parsing
+import pyodbc  # Import pyodbc module to work with database
 
 FILE_NAME = 'newsfeed.txt'  # Declare text file global variable as constant for usage in each class
 
@@ -42,6 +43,48 @@ class News:
                            f'{self.news_text}\n'
                            f'{self.news_city}, {datetime_now.strftime("%Y-%m-%d %X")}\n'
                            f'------------------------------\n\n\n')
+
+    def save_news_to_db(self):
+        """Adds posting datetime and saves news to database"""
+        datetime_now = datetime.now().strftime("%Y-%m-%d %X")
+        # Initiate db connection
+        connection = pyodbc.connect('DRIVER={SQLite3 ODBC Driver};Direct=True;Database=database;String Types= Unicode')
+        cursor = connection.cursor()
+        # Create table for news and commit
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS news (
+                news_text nvarchar(255),
+                city nvarchar(50),
+                news_datetime nvarchar(50)
+                )
+            """
+        )
+        connection.commit()
+        # Check existing rows to avoid duplicates and insert new rows to db
+        cursor.execute(
+            """
+            SELECT COUNT(*) as c
+            FROM news
+            WHERE news_text = ? AND city = ? AND news_datetime = ?
+            """,
+            (self.news_text, self.news_city, datetime_now)
+        )
+        result = cursor.fetchall()
+
+        if result[0][0] == 0:
+            cursor.execute(
+                """
+                INSERT INTO news 
+                (news_text, city, news_datetime)
+                VALUES (?, ?, ?)
+                """,
+                (self.news_text, self.news_city, datetime_now)
+            )
+        else:
+            print('Row already exists')
+        connection.commit()
+        connection.close()
 
 
 class Advertising:
@@ -79,6 +122,48 @@ class Advertising:
                            f'Actual until: {self.ad_date}, {delta.days} days left\n'
                            f'------------------------------\n\n\n')
 
+    def save_ad_to_db(self):
+        """Calculates remaining days and saves current object to database"""
+        delta = self.ad_date - date.today()  # Find how much days left before advertisement ends
+        # Initiate db connection
+        connection = pyodbc.connect('DRIVER={SQLite3 ODBC Driver};Direct=True;Database=database;String Types= Unicode')
+        cursor = connection.cursor()
+        # Create table for ad and commit
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS ad (
+                ad_text nvarchar(255),
+                due_date nvarchar(50),
+                days_left int
+                )
+            """
+        )
+        connection.commit()
+        # Check existing rows to avoid duplicates and insert new rows to db
+        cursor.execute(
+            """
+            SELECT COUNT(*) as c
+            FROM ad
+            WHERE ad_text = ? AND due_date = ? AND days_left = ?
+            """,
+            (self.ad_text, self.ad_date, delta.days)
+        )
+        result = cursor.fetchall()
+
+        if result[0][0] == 0:
+            cursor.execute(
+                """
+                INSERT INTO ad 
+                (ad_text, due_date, days_left)
+                VALUES (?, ?, ?)
+                """,
+                (self.ad_text, self.ad_date, delta.days)
+            )
+        else:
+            print('Row already exists')
+        connection.commit()
+        connection.close()
+
 
 class Recipes:
     """Generates cooking recipes for news feed"""
@@ -114,6 +199,52 @@ class Recipes:
                            f'{self.recipe_text}\n'
                            f'Cooking time: {self.cooking_time} min, difficulty rate: {difficulty}/10\n'
                            f'------------------------------\n\n\n')
+
+    def save_recipe_to_db(self):
+        """Generates recipe difficulty rate and saves current object to file"""
+        if self.cooking_time > 120:  # Get difficulty rate
+            difficulty = randint(7, 10)
+        else:
+            difficulty = randint(1, 6)
+        # Initiate db connection
+        connection = pyodbc.connect('DRIVER={SQLite3 ODBC Driver};Direct=True;Database=database;String Types= Unicode')
+        cursor = connection.cursor()
+        # Create table for recipes and commit
+        cursor.execute(
+            """
+            CREATE TABLE IF NOT EXISTS recipes (
+                recipe_text nvarchar(255),
+                cooking_time int,
+                difficulty int
+                )
+            """
+        )
+        connection.commit()
+        # Check existing rows to avoid duplicates and insert new rows to db
+        cursor.execute(
+            """
+            SELECT COUNT(*) as c
+            FROM recipes
+            WHERE recipe_text = ? AND cooking_time = ? AND difficulty = ?
+            """,
+            (self.recipe_text, self.cooking_time, difficulty)
+        )
+        result = cursor.fetchall()
+
+        if result[0][0] == 0:
+            cursor.execute(
+                """
+                INSERT INTO recipes 
+                (recipe_text, cooking_time, difficulty)
+                VALUES (?, ?, ?)
+                """,
+                (self.recipe_text, self.cooking_time, difficulty)
+            )
+        else:
+            print('Row already exists')
+
+        connection.commit()
+        connection.close()
 
 
 class TextFile:
@@ -152,6 +283,7 @@ class TextFile:
             news_city = item[1].strip()
             news = News(news_text, news_city)  # applies logic from News class
             news.save_news_to_file()
+            news.save_news_to_db()  # add news to database
         # Find all Ad related entries and add it to newsfeed file
         ad_items = re.findall(r'Ad:(.*?)Date:(.*?)\.', fixed_text, flags=re.M | re.S)
         for item in ad_items:
@@ -159,6 +291,7 @@ class TextFile:
             ad_date = datetime.strptime(item[1].strip(), "%Y-%m-%d")
             ad = Advertising(ad_text, ad_date.date())  # applies logic from Advertising class
             ad.save_ad_to_file()
+            ad.save_ad_to_db()  # add advertising to database
         # Find all Recipes related entries and add it to newsfeed file
         recipe_items = re.findall(r'Recipe:(.*?)Time:(.*?)\.', fixed_text, flags=re.M | re.S)
         for item in recipe_items:
@@ -166,6 +299,7 @@ class TextFile:
             recipe_time = item[1].strip()
             recipe = Recipes(recipe_text, int(recipe_time))  # applies logic from Recipes class
             recipe.save_recipe_to_file()
+            recipe.save_recipe_to_db()  # add recipe to database
 
         os.remove(self.file_path)  # Delete source file after all items was added
 
@@ -178,7 +312,7 @@ class JsonFile(TextFile):
         """Inherits file path approach from TextFile class"""
         super().__init__(file_path)
 
-    def read_and_save_json_to_newsfeed(self):
+    def read_and_save_json_to_newsfeed_and_db(self):
         """Reads JSON file and applies writing logic from previous classes"""
         with open(self.file_path, 'r') as file:
             json_list = json.load(file)
@@ -188,13 +322,16 @@ class JsonFile(TextFile):
                 if json_object['type'] == 'news':  # applies logic from News class
                     news = News(json_object["text"], json_object["city"])
                     news.save_news_to_file()
+                    news.save_news_to_db()  # add news to database
                 elif json_object['type'] == 'ad':  # applies logic from Advertising class
                     ad_date = datetime.strptime(json_object['due_date'], "%Y-%m-%d")
                     ad = Advertising(json_object["text"], ad_date.date())
                     ad.save_ad_to_file()
+                    ad.save_ad_to_db()  # add advertising to database
                 elif json_object['type'] == 'recipe':  # applies logic from Recipes class
                     recipe = Recipes(json_object["text"], int(json_object["time"]))
                     recipe.save_recipe_to_file()
+                    recipe.save_recipe_to_db()  # add recipe to database
                 elif json_object is None:  # if JSON file is empty rise exception
                     raise KeyError
                 else:
@@ -212,7 +349,7 @@ class Xml(TextFile):
         """Inherits file path approach from TextFile class"""
         super().__init__(file_path)
 
-    def read_and_save_xml_to_newsfeed(self):
+    def read_and_save_xml_to_newsfeed_and_db(self):
         """Reads XML file and applies writing logic from previous classes"""
         try:
             # parse XML file
@@ -226,17 +363,20 @@ class Xml(TextFile):
                     city = child.find('city').text  # get city
                     news = News(news_text, city)  # applies logic from News class
                     news.save_news_to_file()
+                    news.save_news_to_db()  # add news to database
                 elif child.attrib['type'] == 'ad':
                     ad_text = child.find('ad_text').text  # get ad text
                     due_date = child.find('due_date').text  # get exp date
                     ad_date = datetime.strptime(due_date, "%Y-%m-%d")  # change date format for delta calc
                     ad = Advertising(ad_text, ad_date.date())  # applies logic from Advertising class
                     ad.save_ad_to_file()
+                    ad.save_ad_to_db()  # add advertising to database
                 elif child.attrib['type'] == 'recipe':
                     recipe_text = child.find('recipe_text').text  # get recipe text
                     time = child.find('time').text  # get cooking time
                     recipe = Recipes(recipe_text, int(time))  # applies logic from Recipes class
                     recipe.save_recipe_to_file()
+                    recipe.save_recipe_to_db()  # add recipe to database
             os.remove(self.file_path)  # Delete source file after successful run
         except xml.etree.ElementTree.ParseError:  # handle exception, if XML file is empty or incorrect
             print('Incorrect XML format, please try different file')
@@ -320,14 +460,17 @@ def main():
         if action == 'a':
             news = News.create_news_from_user_input()
             news.save_news_to_file()
+            news.save_news_to_db()
             print('---News added---')
         elif action == 'b':
             ad = Advertising.create_ad_from_user_input()
             ad.save_ad_to_file()
+            ad.save_ad_to_db()
             print('---New advertising added---')
         elif action == 'c':
             recipe = Recipes.create_recipe_from_user_input()
             recipe.save_recipe_to_file()
+            recipe.save_recipe_to_db()
             print('---New recipe added---')
         elif action == 'd':
             from_file = TextFile.get_file_path()
@@ -335,11 +478,11 @@ def main():
             print('---All entries added---')
         elif action == 'e':
             from_json = JsonFile.get_file_path()
-            from_json.read_and_save_json_to_newsfeed()
+            from_json.read_and_save_json_to_newsfeed_and_db()
             print('---All valid entries added---')
         elif action == 'f':
             from_xml = Xml.get_file_path()
-            from_xml.read_and_save_xml_to_newsfeed()
+            from_xml.read_and_save_xml_to_newsfeed_and_db()
             print('---All valid entries added---')
         elif action == 'j':
             print('Exiting news feed generator...')

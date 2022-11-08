@@ -116,7 +116,7 @@ class Recipes:
 
 class TextFile:
     """Generates news items from text file"""
-    default_file_name = 'source_text.txt'
+    default_file_name = 'source.txt'
 
     def __init__(self, file_path: str):
         """Accepts parameter for finding text file - file path"""
@@ -142,13 +142,29 @@ class TextFile:
         """Reads file, normalize news items and saves it to newsfeed file"""
         with open(self.file_path, 'r') as file:
             text_from_file = splitting_sentences(file.read())
-            fixed_text = normalize_text(text_from_file)
+            fixed_text = normalize_text(text_from_file)  # apply text normalization logic from hw 04
+        # Find all News related entries and add it to newsfeed file
+        news_items = re.findall(r'News:(.*?)City:(.*?)\.', fixed_text, flags=re.M | re.S)
+        for item in news_items:
+            news_text = item[0]
+            news_city = item[1].strip()
+            news = News(news_text, news_city)  # applies logic from News class
+            news.save_news_to_file()
+        # Find all Ad related entries and add it to newsfeed file
+        ad_items = re.findall(r'Ad:(.*?)Date:(.*?)\.', fixed_text, flags=re.M | re.S)
+        for item in ad_items:
+            ad_text = item[0]
+            ad_date = datetime.strptime(item[1].strip(), "%Y-%m-%d")
+            ad = Advertising(ad_text, ad_date.date())  # applies logic from Advertising class
+            ad.save_ad_to_file()
+        # Find all Recipes related entries and add it to newsfeed file
+        recipe_items = re.findall(r'Recipe:(.*?)Time:(.*?)\.', fixed_text, flags=re.M | re.S)
+        for item in recipe_items:
+            recipe_text = item[0]
+            recipe_time = item[1].strip()
+            recipe = Recipes(recipe_text, int(recipe_time))  # applies logic from Recipes class
+            recipe.save_recipe_to_file()
 
-        for news in splitting_sentences(fixed_text):  # append all news items to text file
-            with open(FILE_NAME, 'a') as newsfeed:
-                newsfeed.write(f'News form file ---------------\n'
-                               f'{news}\n'
-                               f'------------------------------\n\n\n')
         os.remove(self.file_path)  # Delete source file after all items was added
 
 
